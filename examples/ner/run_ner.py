@@ -28,7 +28,8 @@ from seqeval.metrics import f1_score, precision_score, recall_score
 from torch.nn import CrossEntropyLoss
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler, TensorDataset
 from torch.utils.data.distributed import DistributedSampler
-from tqdm import tqdm, trange
+from tqdm import trange
+from tqdm.notebook import tqdm
 
 from transformers import (
     WEIGHTS_NAME,
@@ -263,6 +264,7 @@ def evaluate(args, model, tokenizer, labels, pad_token_label_id, mode, prefix=""
     nb_eval_steps = 0
     preds = None
     out_label_ids = None
+    output_sequence = None
     model.eval()
     for batch in tqdm(eval_dataloader, desc="Evaluating"):
         batch = tuple(t.to(args.device) for t in batch)
@@ -274,7 +276,7 @@ def evaluate(args, model, tokenizer, labels, pad_token_label_id, mode, prefix=""
                     batch[2] if args.model_type in ["bert", "xlnet"] else None
                 )  # XLM and RoBERTa don"t use segment_ids
             outputs = model(**inputs)
-            tmp_eval_loss, logits = outputs[:2]
+            tmp_eval_loss, logits, seq_output = outputs[:3]
 
             if args.n_gpu > 1:
                 tmp_eval_loss = tmp_eval_loss.mean()  # mean() to average on multi-gpu parallel evaluating
@@ -284,9 +286,11 @@ def evaluate(args, model, tokenizer, labels, pad_token_label_id, mode, prefix=""
         if preds is None:
             preds = logits.detach().cpu().numpy()
             out_label_ids = inputs["labels"].detach().cpu().numpy()
+            output_sequence = seq_output.cpu().numpy()
         else:
             preds = np.append(preds, logits.detach().cpu().numpy(), axis=0)
             out_label_ids = np.append(out_label_ids, inputs["labels"].detach().cpu().numpy(), axis=0)
+            output_sequence = np.append(output_sequence, seq_output.cpu().numpy(), axis=0)
 
     eval_loss = eval_loss / nb_eval_steps
     preds = np.argmax(preds, axis=2)
@@ -295,12 +299,14 @@ def evaluate(args, model, tokenizer, labels, pad_token_label_id, mode, prefix=""
 
     out_label_list = [[] for _ in range(out_label_ids.shape[0])]
     preds_list = [[] for _ in range(out_label_ids.shape[0])]
+    out_seq_list = [[] for _ in range(out_label_ids.shape[0])]
 
     for i in range(out_label_ids.shape[0]):
         for j in range(out_label_ids.shape[1]):
             if out_label_ids[i, j] != pad_token_label_id:
                 out_label_list[i].append(label_map[out_label_ids[i][j]])
                 preds_list[i].append(label_map[preds[i][j]])
+                out_seq_list[i].append(output_sequence[i][j])
 
     results = {
         "loss": eval_loss,
@@ -313,7 +319,7 @@ def evaluate(args, model, tokenizer, labels, pad_token_label_id, mode, prefix=""
     for key in sorted(results.keys()):
         logger.info("  %s = %s", key, str(results[key]))
 
-    return results, preds_list
+    return results, preds_list, out_seq_list
 
 
 def load_and_cache_examples(args, tokenizer, labels, pad_token_label_id, mode):
@@ -575,6 +581,7 @@ def main():
         cache_dir=args.cache_dir if args.cache_dir else None,
     )
     tokenizer_args = {k: v for k, v in vars(args).items() if v is not None and k in TOKENIZER_ARGS}
+    tokenizer_args['additional_special_tokens'] = ["[unused0]"]
     logger.info("Tokenizer arguments: %s", tokenizer_args)
     tokenizer = AutoTokenizer.from_pretrained(
         args.tokenizer_name if args.tokenizer_name else args.model_name_or_path,
@@ -647,7 +654,7 @@ def main():
         tokenizer = AutoTokenizer.from_pretrained(args.output_dir, **tokenizer_args)
         model = AutoModelForTokenClassification.from_pretrained(args.output_dir)
         model.to(args.device)
-        result, predictions = evaluate(args, model, tokenizer, labels, pad_token_label_id, mode="test")
+        result, predictions, representation = evaluate(args, model, tokenizer, labels, pad_token_label_id, mode="test")
         # Save results
         output_test_results_file = os.path.join(args.output_dir, "test_results.txt")
         with open(output_test_results_file, "w") as writer:
@@ -664,7 +671,10 @@ def main():
                         if not predictions[example_id]:
                             example_id += 1
                     elif predictions[example_id]:
-                        output_line = line.split()[0] + " " + predictions[example_id].pop(0) + "\n"
+                        output_line = line.split()[0] + " " + predictions[example_id].pop(0)
+                        if line.split()[0] == "[unused0]":
+                            output_line = output_line + " " + ",".join([str(r) for r in representation[example_id].pop(0)])
+                        output_line = output_line + "\n"
                         writer.write(output_line)
                     else:
                         logger.warning("Maximum sequence length exceeded: No prediction for '%s'.", line.split()[0])
