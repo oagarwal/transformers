@@ -51,11 +51,18 @@ class InputFeatures(object):
 
 
 def read_examples_from_file(data_dir, mode):
-    file_path = os.path.join(data_dir, "{}.txt".format(mode))
+    words_path = os.path.join(data_dir, "{}.words.txt".format(mode))
+    tags_path = os.path.join(data_dir, "{}.tags.txt".format(mode))
     guid_index = 1
     examples = []
-    with open(file_path, encoding="utf-8") as f:
-        words = []
+    with open(words_path, encoding="utf-8") as fw, open(tags_path, encoding="utf-8") as ft:
+        for words, tags in zip(fw, ft):
+            words = words.rstrip().split()
+            tags = tags.rstrip().split()
+            assert len(words) == len(tags)
+            examples.append(InputExample(guid="{}-{}".format(mode, guid_index), words=words, labels=tags))
+            guid_index += 1
+        '''words = []
         labels = []
         for line in f:
             if line.startswith("-DOCSTART-") or line == "" or line == "\n":
@@ -73,7 +80,7 @@ def read_examples_from_file(data_dir, mode):
                     # Examples could have no label for mode = "test"
                     labels.append("O")
         if words:
-            examples.append(InputExample(guid="{}-{}".format(mode, guid_index), words=words, labels=labels))
+            examples.append(InputExample(guid="{}-{}".format(mode, guid_index), words=words, labels=labels))'''
     return examples
 
 

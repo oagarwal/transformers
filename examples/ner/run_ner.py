@@ -663,21 +663,31 @@ def main():
         # Save predictions
         output_test_predictions_file = os.path.join(args.output_dir, "test_predictions.txt")
         with open(output_test_predictions_file, "w") as writer:
-            with open(os.path.join(args.data_dir, "test.txt"), "r") as f:
+            with open(os.path.join(args.data_dir, "test.words.txt"), "r") as fw, open(os.path.join(args.data_dir, "test.tags.txt"), "r") as ft:
                 example_id = 0
-                for line in f:
-                    if line.startswith("-DOCSTART-") or line == "" or line == "\n":
+                for words, tags in zip(fw, ft):
+                    words = words.rstrip().split()
+                    tags = tags.rstrip().split()
+                    assert len(words) == len(tags)
+                    for word, tag in zip(words, tags):
+                        if predictions[example_id]:
+                            writer.write(word + " " + tag + " " + predictions[example_id].pop(0) + "\n")
+                        else:
+                            writer.write(word + " " + tag + " O\n")
+                    writer.write("\n")
+                    example_id += 1
+                    '''if line.startswith("-DOCSTART-") or line == "" or line == "\n":
                         writer.write(line)
                         if not predictions[example_id]:
                             example_id += 1
                     elif predictions[example_id]:
-                        output_line = line.split()[0] + " " + predictions[example_id].pop(0)
+                        output_line = line.split()[0] + " " + line.split()[1] + " " + predictions[example_id].pop(0)
                         if line.split()[0] == "[unused0]":
                             output_line = output_line + " " + ",".join([str(r) for r in representation[example_id].pop(0)])
                         output_line = output_line + "\n"
                         writer.write(output_line)
                     else:
-                        logger.warning("Maximum sequence length exceeded: No prediction for '%s'.", line.split()[0])
+                        logger.warning("Maximum sequence length exceeded: No prediction for '%s'.", line.split()[0])'''
 
     return results
 
