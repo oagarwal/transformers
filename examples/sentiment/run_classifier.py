@@ -657,7 +657,7 @@ def main():
                     line = json.loads(line.rstrip())
                     text = line["reviewText"]
                     label = int(line["overall"] > 3.0)
-                    output_line = {'sentence': text, 'tag': label, 'prediction': prediction]}
+                    output_line = {'sentence': str(text), 'tag': int(label), 'prediction': int(prediction)}
                     writer.write(json.dumps(output_line) + "\n")
 
     return results
