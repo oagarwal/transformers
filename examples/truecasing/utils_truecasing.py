@@ -61,8 +61,8 @@ def read_examples_from_file(data_dir, mode):
     with gzip.open(input_path) as f:
         for line in f:
             line = json.loads(line.rstrip())
-            words = line['text'].split()
-            tags = ['UNCASED' if w.islower() or PATTERN.match(w) else 'CASED' for w in words]
+            words = line['text'].lower().split()
+            tags = ['UNCASED' if w.islower() or PATTERN.match(w) else 'CASED' for w in line['text'].split()]
             assert len(words) == len(tags)
             examples.append(InputExample(guid="{}-{}".format(mode, guid_index), words=words, labels=tags))
             guid_index += 1
