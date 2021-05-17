@@ -301,16 +301,18 @@ def evaluate(args, model, tokenizer, labels, pad_token_label_id, mode, prefix=""
 
     out_label_list = [[] for _ in range(out_label_ids.shape[0])]
     preds_list = [[] for _ in range(out_label_ids.shape[0])]
+    accuracy_list = []
 
     for i in range(out_label_ids.shape[0]):
         for j in range(out_label_ids.shape[1]):
             if out_label_ids[i, j] != pad_token_label_id:
                 out_label_list[i].append(label_map[out_label_ids[i][j]])
                 preds_list[i].append(label_map[preds[i][j]])
+                accuracy_list.append(int(out_label_ids[i][j] == preds[i][j]))
 
     results = {
         "loss": eval_loss,
-        "accuracy": (preds_list == out_label_list).mean(),
+        "accuracy": np.mean(accuracy_list)*100,
         "precision": precision_score(out_label_list, preds_list),
         "recall": recall_score(out_label_list, preds_list),
         "f1": f1_score(out_label_list, preds_list),
