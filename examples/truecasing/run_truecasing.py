@@ -670,7 +670,7 @@ def main():
             with gzip.open(os.path.join(args.data_dir, "test.jsonl.gz")) as f:
                 example_id = 0
                 for line in f:
-                    line = json.loads(line.rstip())
+                    line = json.loads(line.rstrip())
                     words = line['text'].split()
                     tags = ['UNCASED' if w.islower() or PATTERN.match(w) else 'CASED' for w in words]
                     assert len(words) == len(tags)
