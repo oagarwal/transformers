@@ -35,7 +35,8 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset, RandomSampler, SequentialSampler
 from torch.utils.data.distributed import DistributedSampler
-from tqdm import tqdm, trange
+from tqdm.notebook import tqdm
+from tqdm import trange
 
 from transformers import (
     WEIGHTS_NAME,
@@ -469,13 +470,8 @@ def evaluate(args, model: PreTrainedModel, tokenizer: PreTrainedTokenizer, prefi
     perplexity = torch.exp(torch.tensor(eval_loss))
 
     result = {"perplexity": perplexity}
-
-    output_eval_file = os.path.join(eval_output_dir, prefix, "eval_results.txt")
-    with open(output_eval_file, "w") as writer:
-        logger.info("***** Eval results {} *****".format(prefix))
-        for key in sorted(result.keys()):
-            logger.info("  %s = %s", key, str(result[key]))
-            writer.write("%s = %s\n" % (key, str(result[key])))
+    key = "perplexity"
+    logger.info("  %s = %s", key, str(result[key]))
 
     return result
 
@@ -791,9 +787,16 @@ def main():
             result = evaluate(args, model, tokenizer, prefix=prefix)
             result = dict((k + "_{}".format(global_step), v) for k, v in result.items())
             results.update(result)
+        output_eval_file = os.path.join(args.output_dir, prefix, "eval_results.txt")
+        with open(output_eval_file, "w") as writer:
+            logger.info("***** Eval results {} *****".format(prefix))
+            for key in sorted(results.keys()):
+                writer.write("%s = %s\n" % (key, str(results[key])))
+
 
     return results
 
 
 if __name__ == "__main__":
     main()
+
