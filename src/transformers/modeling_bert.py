@@ -1390,7 +1390,7 @@ class BertForTokenClassification(BertPreTrainedModel):
             else:
                 active_labels = labels.view(-1)
             loss = loss_fct(active_logits, active_labels)
-            if weights:
+            if weights is not None:
                 loss = loss * weights.view(-1)
             loss = torch.mean(loss)
             outputs = (loss,) + outputs
