@@ -324,7 +324,11 @@ def load_and_cache_examples(args, tokenizer, labels, pad_token_label_id, mode):
         features = torch.load(cached_features_file)
     else:
         logger.info("Creating features from dataset file at %s", args.data_dir)
-        examples = read_examples_from_file(args.data_dir, mode)
+        examples, start_ind = read_examples_from_file(args.data_dir, mode)
+        if mode == "train" and args.train_aux_file:
+            aux_examples, _ = read_examples_from_file(
+                args.data_dir, mode, start_ind=start_ind, file_name=args.train_aux_file)
+            examples += aux_examples
         features = convert_examples_to_features(
             examples,
             labels,
@@ -430,6 +434,8 @@ def main():
     parser.add_argument("--do_eval", action="store_true", help="Whether to run eval on the dev set.")
     parser.add_argument("--do_predict", action="store_true", help="Whether to run predictions on the test set.")
     parser.add_argument("--predict_ckpt", default="", type=str, help="Predict from this checkpoint.")
+    parser.add_argument("--train_aux_file", default="", type=str, help="extra train file.")
+
     parser.add_argument(
         "--evaluate_during_training",
         action="store_true",

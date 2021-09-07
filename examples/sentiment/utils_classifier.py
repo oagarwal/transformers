@@ -63,18 +63,25 @@ class InputFeatures(object):
         self.label = label
 
 
-def read_examples_from_file(data_dir, mode):
-    input_path = os.path.join(data_dir, "{}.jsonl.gz".format(mode))
-    guid_index = 1
+def read_examples_from_file(data_dir, mode, start_ind=1, file_name=None):
+    if file_name:
+        input_path = os.path.join(data_dir, file_name)
+        f = open(input_path)
+    else:
+        input_path = os.path.join(data_dir, "{}.jsonl.gz".format(mode))
+        f = gzip.open(input_path)
+    guid_index = start_ind
     examples = []
-    with gzip.open(input_path) as f:
-        for line in f:
-            line = json.loads(line.rstrip())
-            text = " ".join(line["reviewText"].split()[:50])
-            label = int(line["overall"] > 3.0)
-            examples.append(InputExample(guid="{}-{}".format(mode, guid_index), text=text, label=label))
-            guid_index += 1
-    return examples
+    for line in f:
+        line = json.loads(line.rstrip())
+        if "sentence" in line:
+            line["reviewText"] = line["sentence"]
+        text = " ".join(line["reviewText"].split()[:50])
+        label = line["prediction"] if file_name else int(line["overall"] > 3.0)
+        examples.append(InputExample(guid="{}-{}".format(mode, guid_index), text=text, label=label))
+        guid_index += 1
+    f.close()
+    return examples, guid_index
 
 
 def convert_examples_to_features(
