@@ -342,12 +342,12 @@ def load_and_cache_examples(args, tokenizer, labels, pad_token_label_id, mode):
         if mode == "train" and args.train_aux_file:
             aux_examples, _ = read_examples_from_file(
                 args.data_dir, mode, start_ind=start_ind, file_wt=args.aux_weight, file_name=args.train_aux_file)
-            examples += aux_examples
+            np.random.shuffle(aux_examples)
+            examples += aux_examples[:int(args.aux_proportion*len(aux_examples))]
         if mode == "dev" and args.dev_aux_file:
             aux_examples, _ = read_examples_from_file(
                 args.data_dir, mode, start_ind=start_ind, file_wt=args.aux_weight, file_name=args.dev_aux_file)
-            np.random.shuffle(aux_examples)
-            examples += aux_examples[:int(args.aux_proportion*len(aux_examples))]
+            examples += aux_examples
         features = convert_examples_to_features(
             examples,
             labels,
