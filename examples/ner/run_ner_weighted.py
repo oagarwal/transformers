@@ -346,7 +346,8 @@ def load_and_cache_examples(args, tokenizer, labels, pad_token_label_id, mode):
         if mode == "dev" and args.dev_aux_file:
             aux_examples, _ = read_examples_from_file(
                 args.data_dir, mode, start_ind=start_ind, file_wt=args.aux_weight, file_name=args.dev_aux_file)
-            examples += aux_examples
+            np.random.shuffle(aux_examples)
+            examples += aux_examples[:int(args.aux_proportion*len(aux_examples))]
         features = convert_examples_to_features(
             examples,
             labels,
@@ -453,6 +454,7 @@ def main():
     parser.add_argument("--train_aux_file", default="", type=str, help="extra train file.")
     parser.add_argument("--dev_aux_file", default="", type=str, help="extra dev file")
     parser.add_argument("--aux_weight", default=1.0, type=float, help="Weight on example in aux file.")
+    parser.add_argument("--aux_proportion", default=1.0, type=float, help="propotion of aux examples to use.")
 
     parser.add_argument(
         "--evaluate_during_training",
