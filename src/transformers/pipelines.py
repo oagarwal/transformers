@@ -58,6 +58,7 @@ if is_torch_available():
         AutoModelForSequenceClassification,
         AutoModelForQuestionAnswering,
         AutoModelForTokenClassification,
+        AutoModelForMultiLabelTokenClassification,
         AutoModelWithLMHead,
     )
     from .modeling_bart import BartForConditionalGeneration
