@@ -731,7 +731,7 @@ class BertModel(BertPreTrainedModel):
         # positions we want to attend and -10000.0 for masked positions.
         # Since we are adding it to the raw scores before the softmax, this is
         # effectively the same as removing these entirely.
-        extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
+        extended_attention_mask = extended_attention_mask.to(dtype=self.dtype)  # fp16 compatibility
         extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
 
         # If a 2D ou 3D attention mask is provided for the cross-attention
@@ -754,7 +754,7 @@ class BertModel(BertPreTrainedModel):
                 )
 
             encoder_extended_attention_mask = encoder_extended_attention_mask.to(
-                dtype=next(self.parameters()).dtype
+                dtype=self.dtype
             )  # fp16 compatibility
             encoder_extended_attention_mask = (1.0 - encoder_extended_attention_mask) * -10000.0
         else:
@@ -774,7 +774,7 @@ class BertModel(BertPreTrainedModel):
                     head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
                 )  # We can specify head_mask for each layer
             head_mask = head_mask.to(
-                dtype=next(self.parameters()).dtype
+                dtype=self.dtype
             )  # switch to fload if need + fp16 compatibility
         else:
             head_mask = [None] * self.config.num_hidden_layers

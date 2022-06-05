@@ -586,7 +586,7 @@ class T5Stack(T5PreTrainedModel):
         # Cf. https://github.com/tensorflow/mesh/blob/8d2465e9bc93129b913b5ccc6a59aa97abd96ec6/mesh_tensorflow/transformer/transformer_layers.py#L270
         # extended_attention_mask = (extended_attention_mask == extended_attention_mask.transpose(-1, -2))
 
-        extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
+        extended_attention_mask = extended_attention_mask.to(dtype=self.dtype)  # fp16 compatibility
         extended_attention_mask = (1.0 - extended_attention_mask) * -1e9
 
         if self.is_decoder:
@@ -602,7 +602,7 @@ class T5Stack(T5PreTrainedModel):
             # encoder_extended_attention_mask = (encoder_extended_attention_mask == encoder_extended_attention_mask.transpose(-1, -2))
 
             encoder_extended_attention_mask = encoder_extended_attention_mask.to(
-                dtype=next(self.parameters()).dtype
+                dtype=self.dtype
             )  # fp16 compatibility
             encoder_extended_attention_mask = (1.0 - encoder_extended_attention_mask) * -1e9
         else:
@@ -622,7 +622,7 @@ class T5Stack(T5PreTrainedModel):
                     head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
                 )  # We can specify head_mask for each layer
             head_mask = head_mask.to(
-                dtype=next(self.parameters()).dtype
+                dtype=self.dtype
             )  # switch to fload if need + fp16 compatibility
         else:
             head_mask = [None] * self.config.num_layers

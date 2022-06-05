@@ -363,7 +363,7 @@ class CTRLModel(CTRLPreTrainedModel):
             # positions we want to attend and -10000.0 for masked positions.
             # Since we are adding it to the raw scores before the softmax, this is
             # effectively the same as removing these entirely.
-            attention_mask = attention_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
+            attention_mask = attention_mask.to(dtype=self.dtype)  # fp16 compatibility
             attention_mask = (1.0 - attention_mask) * -10000.0
 
         # Prepare head mask if needed
@@ -379,7 +379,7 @@ class CTRLModel(CTRLPreTrainedModel):
                     head_mask.unsqueeze(1).unsqueeze(-1).unsqueeze(-1)
                 )  # We can specify head_mask for each layer
             head_mask = head_mask.to(
-                dtype=next(self.parameters()).dtype
+                dtype=self.dtype
             )  # switch to fload if need + fp16 compatibility
         else:
             head_mask = [None] * self.config.n_layer

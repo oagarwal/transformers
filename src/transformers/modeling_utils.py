@@ -18,9 +18,10 @@
 import logging
 import os
 import typing
+from Typing import List, Tuple
 
 import torch
-from torch import nn
+from torch import Tensor, nn, device, dtype
 from torch.nn import CrossEntropyLoss
 from torch.nn import functional as F
 
@@ -107,6 +108,30 @@ class ModuleUtilsMixin:
             module.mem_rss_diff = 0
             module.mem_rss_post_forward = 0
             module.mem_rss_pre_forward = 0
+            
+    @property
+    def dtype(self) -> dtype:
+        try:
+            return next(self.parameters()).dtype
+        except StopIteration:
+            def find_tensor_attributes(model: nn.Module) -> List[Tuple[str, Tensor]]:
+                tuples = [(k, v) for k, v in module.__dict__.items() if torch.is_tensor(v)]
+                return tuples
+            gen = self._named_members(get_members_fn=find_tensor_attributes)
+            first_tuple = next(gen)
+            return first_tuple[1].dtype
+      
+    @property
+    def device(self) -> dtype:
+        try:
+            return next(self.parameters()).device
+        except StopIteration:
+            def find_tensor_attributes(model: nn.Module) -> List[Tuple[str, Tensor]]:
+                tuples = [(k, v) for k, v in module.__dict__.items() if torch.is_tensor(v)]
+                return tuples
+            gen = self._named_members(get_members_fn=find_tensor_attributes)
+            first_tuple = next(gen)
+            return first_tuple[1].device
 
 
 class PreTrainedModel(nn.Module, ModuleUtilsMixin):
