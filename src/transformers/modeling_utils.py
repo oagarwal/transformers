@@ -580,7 +580,16 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin):
                 s.startswith(cls.base_model_prefix) for s in state_dict.keys()
             ):
                 model_to_load = getattr(model, cls.base_model_prefix)
-
+                
+            loaded_keys = [k for k in state_dict.keys()]
+            model_state_dict = model.state_dict()
+            mismatched_keys = []
+            for checkpoint_key in loaded_keys:
+                model_key = checkpoint_key
+                if model_key in model_state_dict and state_dict[checkpoint_key].shape != model_state_dict[model_key].shape:
+                    mismatched_keys.append((checkpoint_key, state_dict[checkpoint_key].shape, model_state_dict[model_key].shape))
+                    del state_dict[checkpoint_key]
+                    
             load(model_to_load, prefix=start_prefix)
 
             if model.__class__.__name__ != model_to_load.__class__.__name__:
@@ -602,6 +611,19 @@ class PreTrainedModel(nn.Module, ModuleUtilsMixin):
                     "Weights from pretrained model not used in {}: {}".format(
                         model.__class__.__name__, unexpected_keys
                     )
+                )
+            if len(mismatched_keys) > 0:
+                mismatched_warning = "\n".join(
+                    [
+                        f"- {key}: found shape {shape1} in the checkpoint and {shape2} in the model instantiated"
+                        for key, shape1, shape2 in mismatched_keys
+                    ]
+                )
+                logger.warning(
+                    f"Some weights of {model.__class__.__name__} were not initialized from the model checkpoint at"
+                    f" {pretrained_model_name_or_path} and are newly initalized because the shapes did not"
+                    f" match:\n{mismatched_warning}\nYou should probably TRAIN this model on a down-stream task to be able"
+                    " to use it for predictions and inference."
                 )
             if len(error_msgs) > 0:
                 raise RuntimeError(
