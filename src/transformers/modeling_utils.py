@@ -18,7 +18,7 @@
 import logging
 import os
 import typing
-from Typing import List, Tuple
+from typing import List, Tuple
 
 import torch
 from torch import Tensor, nn, device, dtype
